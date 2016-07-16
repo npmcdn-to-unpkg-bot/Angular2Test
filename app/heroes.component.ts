@@ -1,37 +1,64 @@
-import { Component } from '@angular/core';
-import { OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router }            from '@angular/router';
 
-import { Hero } from './hero';
+import { Hero }                from './hero';
+import { HeroService }         from './hero.service';
 import { HeroDetailComponent } from './hero-detail.component';
-import { HeroService } from './hero.service'
 
 @Component({
-    selector: 'my-heroes',
-    templateUrl: 'app/heroes.component.html',
-    styleUrls: ['app/heroes.component.css'],
-    directives: [HeroDetailComponent],
+  selector: 'my-heroes',
+  templateUrl: 'app/heroes.component.html',
+  styleUrls:  ['app/heroes.component.css'],
+  directives: [HeroDetailComponent]
 })
-
 export class HeroesComponent implements OnInit {
+  heroes: Hero[];
+  selectedHero: Hero;
+  addingHero = false;
+  error: any;
 
-    heroes: Hero[];
-    selectedHero: Hero;
+  constructor(
+    private router: Router,
+    private heroService: HeroService) { }
 
-    constructor(private heroService: HeroService, private router: Router) { }
+  getHeroes() {
+    this.heroService
+        .getHeroes()
+        .then(heroes => this.heroes = heroes)
+        .catch(error => this.error = error);
+  }
 
-    ngOnInit() {
-        this.getHeroes();
-    }
+  addHero() {
+    this.addingHero = true;
+    this.selectedHero = null;
+  }
 
-    onSelect(hero: Hero) { this.selectedHero = hero; }
+  close(savedHero: Hero) {
+    this.addingHero = false;
+    if (savedHero) { this.getHeroes(); }
+  }
 
-    getHeroes() {
-        this.heroService.getHeroes().then(heroes => this.heroes = heroes);
-    }
+  deleteHero(hero: Hero, event: any) {
+    event.stopPropagation();
+    this.heroService
+        .delete(hero)
+        .then(res => {
+          this.heroes = this.heroes.filter(h => h !== hero);
+          if (this.selectedHero === hero) { this.selectedHero = null; }
+        })
+        .catch(error => this.error = error);
+  }
 
-    gotoDetail() {
-        this.router.navigate(['/detail', this.selectedHero.id]);
-    }
+  ngOnInit() {
+    this.getHeroes();
+  }
 
+  onSelect(hero: Hero) {
+    this.selectedHero = hero;
+    this.addingHero = false;
+  }
+
+  gotoDetail() {
+    this.router.navigate(['/detail', this.selectedHero.id]);
+  }
 }
